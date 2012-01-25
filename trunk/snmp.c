@@ -38,6 +38,22 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include "snmp.h"
 
+extern void debugg(unsigned char* ,int );
+
+unsigned char oid_item_length(unsigned int value) {
+    if (       ! (value & 0xffffff80) ) { // 2 ^  7
+        return 1;
+    } else if (! (value & 0xffffc000) ) { // 2 ^ 14
+        return 2;
+    } else if (! (value & 0xfffe0000) ) { // 2 ^ 21
+        return 3;
+    } else if (! (value & 0xf0000000) ) { // 2 ^ 28
+        return 4;
+    } else {
+        return 5;
+    }
+}
+
 int decode_integer(unsigned char* array, unsigned int* pointer){
 	unsigned int buffer;
 	*pointer=*pointer+1;
@@ -106,26 +122,35 @@ unsigned char* decode_oid(unsigned char* array, unsigned int* pointer){
 	unsigned char* string=NULL;
 	unsigned char* buffer=(unsigned char*)calloc(100,sizeof(unsigned char));
 	unsigned char* number=(unsigned char*)calloc(6,sizeof(unsigned char));
-	unsigned int oid_node;
+	unsigned int oid_node,oid_node_long=0;
 	*pointer=*pointer+1;
 	unsigned char length=array[*pointer];
 	*pointer=*pointer+1;
-	if(array[*pointer]=0x2b){
-		strcat(buffer, "1.3");
+	if(array[*pointer]==0x2b){
+		strcat(( char* )buffer, "1.3");
 	}
 	length--;
 	while(length){
 		*pointer=*pointer+1;
 		oid_node=array[*pointer];
-		if(oid_node>=128){
-			oid_node=(unsigned int)(((oid_node-128)*128)+array[*pointer=*pointer+1]);
+                if(oid_node & 0x80) {
+			oid_node_long |= oid_node & 0x7f;
+			oid_node_long  = oid_node_long << 7;
+		} else {
+			if (oid_node_long) {
+				oid_node_long |= oid_node;
+				sprintf((char*)number,".%d",oid_node_long);
+				strcat((char*)buffer,(char*)number);
+				oid_node_long=0;
+			} else {
+				sprintf((char*)number,".%d",oid_node);
+				strcat((char*)buffer,(char*)number);
+			}
 		}
-		sprintf(number,".%d",oid_node);
-		strcat(buffer,number);
 		length--;
 	}
-	string=(unsigned char*)calloc(1,strlen(buffer)+1);
-	strcpy(string,buffer);
+	string=(unsigned char*)calloc(1,strlen((char*)buffer)+1);
+	strcpy((char*)string,(char*)buffer);
 	*pointer=*pointer+1;
 	free(buffer);
 	free(number);
@@ -134,34 +159,38 @@ unsigned char* decode_oid(unsigned char* array, unsigned int* pointer){
 
 unsigned char* encode_oid(unsigned char* array){
 	unsigned char* oid=NULL;
-	unsigned char* buffer=(unsigned char*)calloc(1,strlen(array)+1);
+	unsigned char* buffer=(unsigned char*)calloc(1,strlen((char*)array)+1);
 	unsigned char* number=(unsigned char*)calloc(6,sizeof(unsigned char));
-	unsigned int pointer=1;
-	unsigned char* oid_buffer=(unsigned char*)calloc(1,strlen(array)+1);
-	unsigned int temp=0;
-	strcpy(buffer,array);
-	unsigned char* part;
-	part=strtok(buffer,".");
-	while (part!=NULL){
-		temp=temp+atoi(part);
-		if(pointer>1){
-			if(temp>127){
-				oid_buffer[pointer]=((unsigned char)(temp/128))+128;
-				pointer++;
-			}
-			oid_buffer[pointer]=(unsigned char)temp;
-			temp=0;
+	unsigned int index=2;
+	unsigned char* oid_buffer=(unsigned char*)calloc(1,strlen((char*)array)+1);
+	unsigned int value=0;
+	char *saveptr;
+	strcpy((char*)buffer,(char*)array);
+	char* part;
+
+	part=strtok_r((char*)buffer,".",&saveptr);
+	value=atoi(part)*40;
+	part=strtok_r(NULL,".",&saveptr);
+	value+=atoi(part);
+	oid_buffer[index] = value;
+        index++;
+
+	for (part=strtok_r(NULL,".",&saveptr); part ; part=strtok_r(NULL,".",&saveptr)) {
+		value=atoi(part);
+		unsigned char length = oid_item_length(value);
+		signed char j = 0;
+		oid_buffer[index + length-1] = value & 0x7F;
+		for (j = length - 2 ; j >= 0; j--) {
+			value = value >> 7;
+			oid_buffer[index + j] = ( value & 0x7F ) | 0x80 ;
 		}
-		else{
-			temp=(unsigned char)(temp*40);
-		}
-		pointer++;
-		part=strtok(NULL,".");
+		index += length;
 	}
+
 	oid_buffer[0]=0x06;
-	oid_buffer[1]=pointer-2;
-	oid=(unsigned char*)calloc(1,pointer);
-	memcpy(oid,oid_buffer,pointer);
+	oid_buffer[1]=index-2;
+	oid=(unsigned char*)calloc(1,index);
+	memcpy(oid,oid_buffer,index);
 	free(buffer);
 	free(number);
 	free(oid_buffer);
@@ -169,10 +198,10 @@ unsigned char* encode_oid(unsigned char* array){
 }
 
 unsigned char* encode_string(unsigned char* array){
-	unsigned char* string=(unsigned char*)calloc(1,strlen(array)+2);
-	memcpy(&string[2],array,strlen(array));
+	unsigned char* string=(unsigned char*)calloc(1,strlen((char*)array)+2);
+	memcpy(&string[2],array,strlen((char*)array));
 	string[0]=0x4;
-	string[1]=(unsigned char)(strlen(array));
+	string[1]=(unsigned char)(strlen((char*)array));
 	return string;
 }
 
@@ -231,12 +260,12 @@ unsigned char* encode_integer_by_length(unsigned int value, unsigned char length
 }
 
 unsigned char* return_pdu_type_string(unsigned char pdu_type){
-	unsigned char* pdu_type_string=NULL;
-	unsigned char GetRequest[]={'G','e','t','R','e','q','u','e','s','t','\0'};
-	unsigned char GetResponse[]={'G','e','t','R','e','s','p','o','n','s','e','\0'};
-	unsigned char GetNext[]={'G','e','t','N','e','x','t','\0'};
-	unsigned char SetRequest[]={'S','e','t','R','e','q','u','e','s','t','\0'};
-	unsigned char Error[]={'w','r','o','n','g',0x20,'P','D','U','\0'};
+	char* pdu_type_string=NULL;
+	char GetRequest[]={'G','e','t','R','e','q','u','e','s','t','\0'};
+	char GetResponse[]={'G','e','t','R','e','s','p','o','n','s','e','\0'};
+	char GetNext[]={'G','e','t','N','e','x','t','\0'};
+	char SetRequest[]={'S','e','t','R','e','q','u','e','s','t','\0'};
+	char Error[]={'w','r','o','n','g',0x20,'P','D','U','\0'};
 	switch (pdu_type) {
 	case 0xa0:
 		{
@@ -269,27 +298,27 @@ unsigned char* return_pdu_type_string(unsigned char pdu_type){
 		}
 		break;
 	}
-	return pdu_type_string;
+	return (unsigned char*)pdu_type_string;
 }
 
 unsigned char* return_data_type_string(unsigned char data_type){
-	unsigned char* data_type_string=NULL;
-	unsigned char Integer[]={'I','n','t','e','g','e','r','\0'};
-	unsigned char OctetString[]={'O','c','t','e','t',0x20,'S','t','r','i','n','g','\0'};
-	unsigned char Null[]={'N','u','l','l','\0'};
-	unsigned char ObjectIdentifier[]={'O','b','j','e','c','t',0x20,'I','d','e','n','t','i','f','i','e','r','\0'};
-	unsigned char Timeticks[]={'T','i','m','e','t','i','c','k','s','\0'};
-	unsigned char Error[]={'E','r','r','o','r','\0'};
+	char* data_type_string=NULL;
+	char Integer[]={'I','n','t','e','g','e','r','\0'};
+	char OctetString[]={'O','c','t','e','t',0x20,'S','t','r','i','n','g','\0'};
+	char Null[]={'N','u','l','l','\0'};
+	char ObjectIdentifier[]={'O','b','j','e','c','t',0x20,'I','d','e','n','t','i','f','i','e','r','\0'};
+	char Timeticks[]={'T','i','m','e','t','i','c','k','s','\0'};
+	char Error[]={'E','r','r','o','r','\0'};
 	switch (data_type) {
 	case 0x02:
 		{
-			data_type_string=calloc(1,strlen(Integer)+1);
+			data_type_string=calloc(1,strlen((char*)Integer)+1);
 			strcpy(data_type_string,Integer);
 		}
 		break;
 	case 0x04:
 		{
-			data_type_string=calloc(1,strlen(OctetString)+1);
+			data_type_string=calloc(1,strlen((char*)OctetString)+1);
 			strcpy(data_type_string,OctetString);
 		}
 		break;
@@ -301,24 +330,24 @@ unsigned char* return_data_type_string(unsigned char data_type){
 		break;
 	case 0x06:
 		{
-			data_type_string=calloc(1,strlen(ObjectIdentifier)+1);
+			data_type_string=calloc(1,strlen((char*)ObjectIdentifier)+1);
 			strcpy(data_type_string,ObjectIdentifier);
 		}
 		break;
 	case 0x43:
 		{
-			data_type_string=calloc(1,strlen(Integer)+1);
+			data_type_string=calloc(1,strlen((char*)Integer)+1);
 			strcpy(data_type_string,Timeticks);
 		}
 		break;
 	default:
 		{
-			data_type_string=calloc(1,strlen(Error)+1);
+			data_type_string=calloc(1,strlen((char*)Error)+1);
 			strcpy(data_type_string,Error);
 		}
 		break;
 	}
-	return data_type_string;
+	return (unsigned char*)data_type_string;
 }
 
 void disp_snmp_message_rx(struct snmp_message_rx* snmp_msg){
@@ -348,7 +377,7 @@ struct snmp_message_rx* create_snmp_message_rx(unsigned char* udp_received){
 		if(udp_received[pointer]==0x02){
 			buffer=decode_integer(&udp_received[0], &pointer);
 			if(!buffer){snmp_msg->version=++buffer;}
-			else{snmp_msg->version==0xff;}
+			else{snmp_msg->version=0xff;}
 		}
 		if(udp_received[pointer]==0x04){
 			snmp_msg->community=decode_string(&udp_received[0], &pointer);
@@ -530,8 +559,8 @@ void clr_varbind_list_rx(struct varbind_list_rx* varbind_list){
 struct varbind* create_varbind(unsigned char* oid, unsigned char data_type, void* value){
 	struct varbind* varbind=NULL;
 	varbind=(struct varbind*)calloc(1,sizeof(struct varbind));
-	varbind->oid=(unsigned char*)calloc(1,strlen(oid));
-	strcpy(varbind->oid,oid);
+	varbind->oid=(unsigned char*)calloc(1,strlen((char*)oid));
+	strcpy((char*)varbind->oid,(char*)oid);
 	varbind->data_type=data_type;
 	switch (data_type) {
 	case 0x02:
@@ -542,8 +571,8 @@ struct varbind* create_varbind(unsigned char* oid, unsigned char data_type, void
 		break;
 	case 0x04:
 		{
-			varbind->value=(unsigned char*)calloc(1, strlen((unsigned char*)value)+1);
-			strcpy((unsigned char*)varbind->value,(unsigned char*)value);
+			varbind->value=(unsigned char*)calloc(1, strlen((char*)value)+1);
+			strcpy((char*)varbind->value,(char*)value);
 		}
 		break;
 	case 0x05:
@@ -554,8 +583,8 @@ struct varbind* create_varbind(unsigned char* oid, unsigned char data_type, void
 		break;
 	case 0x06:
 		{
-			varbind->value=(unsigned char*)calloc(1, strlen((unsigned char*)value)+1);
-			strcpy((unsigned char*)varbind->value,(unsigned char*)value);
+			varbind->value=(unsigned char*)calloc(1, strlen((char*)value)+1);
+			strcpy((char*)varbind->value,(char*)value);
 		}
 	case 0x043:
 		{
@@ -583,8 +612,8 @@ void update_varbind(struct varbind* varbind, unsigned char data_type, void* valu
 		break;
 	case 0x04:
 		{
-			varbind->value=(unsigned char*)calloc(1, strlen((unsigned char*)value)+1);
-			strcpy((unsigned char*)varbind->value,(unsigned char*)value);
+			varbind->value=(unsigned char*)calloc(1, strlen((char*)value)+1);
+			strcpy((char*)varbind->value,(char*)value);
 		}
 		break;
 	case 0x05:
@@ -595,11 +624,11 @@ void update_varbind(struct varbind* varbind, unsigned char data_type, void* valu
 		break;
 	case 0x06:
 		{
-			varbind->value=(unsigned char*)calloc(1, strlen((unsigned char*)value)+1);
-			strcpy((unsigned char*)varbind->value,(unsigned char*)value);
+			varbind->value=(unsigned char*)calloc(1, strlen((char*)value)+1);
+			strcpy((char*)varbind->value,(char*)value);
 		}
 		break;
-	case 0x043:		
+	case 0x43:		
 		{
 			varbind->value=(unsigned int*)calloc(1, sizeof(unsigned int));
 			*(unsigned int*)varbind->value=*(unsigned int*)value;
@@ -765,7 +794,7 @@ struct snmp_pdu_tx* create_snmp_pdu_tx(unsigned char pdu_type,unsigned int reque
 	unsigned int pointer=2;
 	unsigned char* pdu_buffer=(unsigned char*)calloc(300,sizeof(unsigned char));
 	unsigned char* data_buffer;
-	data_buffer=encode_integer_by_length(request_id,2,0x02);
+	data_buffer=encode_integer_by_length(request_id,4,0x02);
 	memcpy(&pdu_buffer[pointer], data_buffer,data_buffer[1]+2);
 	pointer+=data_buffer[1]+2;
 	free(data_buffer);
