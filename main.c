@@ -52,12 +52,12 @@ unsigned char community_read[]="public";
 unsigned char community_write[]="private";
 time_t startup_time;
 
-unsigned char oid[20][30] = { "1.3.6.1.2.1.1.1.0", "1.3.6.1.2.1.1.3.0", "1.3.6.1.4.1.1.99.1.1.0",
-	"1.3.6.1.4.1.1.99.1.2.0", "1.3.6.1.4.1.1.99.1.3.0", "1.3.6.1.4.1.1.99.2.1.1.1.0",
-	"1.3.6.1.4.1.1.99.2.1.1.2.0", "1.3.6.1.4.1.1.99.2.1.1.3.0", "1.3.6.1.4.1.1.99.2.1.1.4.0",
-	"1.3.6.1.4.1.1.99.2.1.1.5.0", "1.3.6.1.4.1.1.99.2.1.1.6.0", "1.3.6.1.4.1.1.99.2.1.2.1.0",
-	"1.3.6.1.4.1.1.99.2.1.2.2.0", "1.3.6.1.4.1.1.99.2.1.2.3.0", "1.3.6.1.4.1.1.99.2.1.2.4.0",
-	"1.3.6.1.4.1.1.99.2.1.2.5.0", "1.3.6.1.4.1.1.99.2.1.2.6.0"
+unsigned char oid[20][30] = { "1.3.6.1.2.1.1.1.0", "1.3.6.1.2.1.1.3.0", "1.3.6.1.4.1.99.1.1.0",
+	"1.3.6.1.4.1.99.1.2.0", "1.3.6.1.4.1.99.1.3.0", "1.3.6.1.4.1.99.2.1.1.1.0",
+	"1.3.6.1.4.1.99.2.1.1.2.0", "1.3.6.1.4.1.99.2.1.1.3.0", "1.3.6.1.4.1.99.2.1.1.4.0",
+	"1.3.6.1.4.1.99.2.1.1.5.0", "1.3.6.1.4.1.99.2.1.1.6.0", "1.3.6.1.4.1.99.2.1.2.1.0",
+	"1.3.6.1.4.1.99.2.1.2.2.0", "1.3.6.1.4.1.99.2.1.2.3.0", "1.3.6.1.4.1.99.2.1.2.4.0",
+	"1.3.6.1.4.1.99.2.1.2.5.0", "1.3.6.1.4.1.99.2.1.2.6.0"
 };
 unsigned char description[]="Pikkerton ZBS-110 Agent";
 unsigned char MasterName[]="Pikkerton ZBS-110 Masteragent";
@@ -103,7 +103,7 @@ void debugg(unsigned char* packet,int length) {
 		}
 		for (i=0; i<(width); i++) {
 			printf("%02X", displayNumb[i]);
-			if(i<(width-1)){printf(" : ");}
+			if(i<(width-1)){printf(" ");}
 		}
 		printf(" -->   ");
 		for (i=0;i< (width); i++) {
@@ -117,56 +117,56 @@ void process_varbind_list(struct varbind_list_rx* varbind_list){
 	int i,timeticks;
 	time_t t;
 	for(i=0;i<varbind_list->varbind_idx;i++){
-		if(!strcmp(&oid[0][0],varbind_list->varbind_list[i]->oid)){
+		if(!strcmp(( char* )&oid[0][0],( char* )varbind_list->varbind_list[i]->oid)){
 			update_varbind(varbind_list->varbind_list[i],0x04,description);
 		}
-		if(!strcmp(&oid[1][0],varbind_list->varbind_list[i]->oid)){
+		if(!strcmp(( char* )&oid[1][0],( char*  )varbind_list->varbind_list[i]->oid)){
 			timeticks=(unsigned int)((time(&t)-startup_time)*100);
 			update_varbind(varbind_list->varbind_list[i],0x043,&timeticks);
 		}
-		if(!strcmp(&oid[2][0],varbind_list->varbind_list[i]->oid)){
+		if(!strcmp(( char* )&oid[2][0],( char* )varbind_list->varbind_list[i]->oid)){
 			update_varbind(varbind_list->varbind_list[i],0x04,MasterName);
 		}
-		if(!strcmp(&oid[3][0],varbind_list->varbind_list[i]->oid)){
+		if(!strcmp(( char* )&oid[3][0],( char* )varbind_list->varbind_list[i]->oid)){
 			update_varbind(varbind_list->varbind_list[i],0x04,MasterLocation);
 		}
-		if(!strcmp(&oid[4][0],varbind_list->varbind_list[i]->oid)){
+		if(!strcmp(( char* )&oid[4][0],( char* )varbind_list->varbind_list[i]->oid)){
 			update_varbind(varbind_list->varbind_list[i],0x02,&NumberOfAgents);
 		}
-		if(!strcmp(&oid[5][0],varbind_list->varbind_list[i]->oid)){
+		if(!strcmp(( char* )&oid[5][0],( char* )varbind_list->varbind_list[i]->oid)){
 			update_varbind(varbind_list->varbind_list[i],0x04,PID);
 		}
-		if(!strcmp(&oid[6][0],varbind_list->varbind_list[i]->oid)){
+		if(!strcmp(( char* )&oid[6][0],( char* )varbind_list->varbind_list[i]->oid)){
 			update_varbind(varbind_list->varbind_list[i],0x04,HW);
 		}
-		if(!strcmp(&oid[7][0],varbind_list->varbind_list[i]->oid)){
+		if(!strcmp(( char* )&oid[7][0],( char* )varbind_list->varbind_list[i]->oid)){
 			update_varbind(varbind_list->varbind_list[i],0x04,SW);
 		}
-		if(!strcmp(&oid[8][0],varbind_list->varbind_list[i]->oid)){
+		if(!strcmp(( char* )&oid[8][0],( char* )varbind_list->varbind_list[i]->oid)){
 			update_varbind(varbind_list->varbind_list[i],0x04,SN);
 		}
-		if(!strcmp(&oid[9][0],varbind_list->varbind_list[i]->oid)){
+		if(!strcmp(( char* )&oid[9][0],( char* )varbind_list->varbind_list[i]->oid)){
 			update_varbind(varbind_list->varbind_list[i],0x04,ID);
 		}
-		if(!strcmp(&oid[10][0],varbind_list->varbind_list[i]->oid)){
+		if(!strcmp(( char* )&oid[10][0],( char* )varbind_list->varbind_list[i]->oid)){
 			update_varbind(varbind_list->varbind_list[i],0x02,&UB);
 		}
-		if(!strcmp(&oid[11][0],varbind_list->varbind_list[i]->oid)){
+		if(!strcmp(( char* )&oid[11][0],( char* )varbind_list->varbind_list[i]->oid)){
 			update_varbind(varbind_list->varbind_list[i],0x02,&POW);
 		}
-		if(!strcmp(&oid[12][0],varbind_list->varbind_list[i]->oid)){
+		if(!strcmp(( char* )&oid[12][0],( char* )varbind_list->varbind_list[i]->oid)){
 			update_varbind(varbind_list->varbind_list[i],0x02,&WORK);
 		}
-		if(!strcmp(&oid[13][0],varbind_list->varbind_list[i]->oid)){
+		if(!strcmp(( char* )&oid[13][0],( char* )varbind_list->varbind_list[i]->oid)){
 			update_varbind(varbind_list->varbind_list[i],0x02,&FREQ);
 		}
-		if(!strcmp(&oid[14][0],varbind_list->varbind_list[i]->oid)){
+		if(!strcmp(( char* )&oid[14][0],( char* )varbind_list->varbind_list[i]->oid)){
 			update_varbind(varbind_list->varbind_list[i],0x02,&VRMS);
 		}
-		if(!strcmp(&oid[15][0],varbind_list->varbind_list[i]->oid)){
+		if(!strcmp(( char* )&oid[15][0],( char* )varbind_list->varbind_list[i]->oid)){
 			update_varbind(varbind_list->varbind_list[i],0x02,&IRMS);
 		}
-		if(!strcmp(&oid[16][0],varbind_list->varbind_list[i]->oid)){
+		if(!strcmp(( char* )&oid[16][0],( char* )varbind_list->varbind_list[i]->oid)){
 			update_varbind(varbind_list->varbind_list[i],0x02,&LOAD);
 		}
 	}
@@ -186,7 +186,8 @@ void sendPacket(struct in_addr host,short port,int sock, struct snmp_message_tx*
 int main(){
 	time(&startup_time);
 	int sock;
-	int addr_len, bytes_read;
+	socklen_t addr_len;
+	int bytes_read;
 	char recv_data[1024];
 	struct sockaddr_in server_addr , client_addr;
 	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1){
@@ -209,7 +210,7 @@ int main(){
 		recv_data[bytes_read] = '\0';
 		printf("\n(%s , %d)\n",inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));
 		printf("\n");
-		struct snmp_message_rx* snmp_msg=create_snmp_message_rx(& recv_data[0]);
+		struct snmp_message_rx* snmp_msg=create_snmp_message_rx((unsigned char *)& recv_data[0]);
 		if(snmp_msg!=NULL){
 			disp_snmp_message_rx(snmp_msg);
 			struct snmp_pdu_rx* snmp_pdu=create_snmp_pdu_rx(snmp_msg->snmp_pdu);
