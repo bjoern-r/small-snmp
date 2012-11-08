@@ -559,7 +559,7 @@ void clr_varbind_list_rx(struct varbind_list_rx* varbind_list){
 struct varbind* create_varbind(unsigned char* oid, unsigned char data_type, void* value){
 	struct varbind* varbind=NULL;
 	varbind=(struct varbind*)calloc(1,sizeof(struct varbind));
-	varbind->oid=(unsigned char*)calloc(1,strlen((char*)oid));
+	varbind->oid=(unsigned char*)calloc(1,strlen((char*)oid)+1);
 	strcpy((char*)varbind->oid,(char*)oid);
 	varbind->data_type=data_type;
 	switch (data_type) {
