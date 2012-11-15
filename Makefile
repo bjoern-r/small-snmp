@@ -3,8 +3,8 @@ CFLAGS+=-Wall -g
 
 all: smallsnmp
 
-smallsnmp: main.c snmp.o snmp.h
-	$(CC) $(CFLAGS) main.c snmp.o -o smallsnmp
+smallsnmp: main.c snmp.o snmp.h db.o db.h
+	$(CC) $(CFLAGS) main.c snmp.o db.o -o smallsnmp
 
 .PHONY: clean
 clean:
