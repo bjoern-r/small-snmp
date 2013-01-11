@@ -396,7 +396,20 @@ struct snmp_message_rx *create_snmp_message_rx(unsigned char *udp_received)
 		snmp_msg=(struct snmp_message_rx*)calloc(1,sizeof(struct snmp_message_rx));
 		pointer++;
 
-		snmp_msg->snmp_message_length=udp_received[pointer];
+        // if multi-byte length
+        if(udp_received[pointer] & 0x80) {
+            unsigned int len_bytes = udp_received[pointer] & 0x7F;
+
+             snmp_msg->snmp_message_length = 0;
+
+             while(len_bytes--) {
+                 pointer++;
+                 snmp_msg->snmp_message_length |= udp_received[pointer] << (len_bytes * 8);
+             }
+        } else {
+            snmp_msg->snmp_message_length = udp_received[pointer];
+        }
+
 		pointer++;
 
 		if(udp_received[pointer]==0x02){
