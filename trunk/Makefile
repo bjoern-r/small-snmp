@@ -9,5 +9,5 @@ smallsnmp: main.c snmp.o snmp.h db.o db.h
 .PHONY: clean
 clean:
 	@rm -f *.o
-	@rm -f sml_server
+	@rm -f smallsnmp
 
