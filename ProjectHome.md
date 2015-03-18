@@ -1,0 +1,1 @@
+This Project provides a simple Implementation of the SNMP v1 as a library.
