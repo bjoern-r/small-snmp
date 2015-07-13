@@ -27,7 +27,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///////////////////////////////////////////////////////////////////////
 //  Module:			main.c
 //  Author:		Andreas Bartusch <xelean@googlemail.com>
-//  Contact@FOKUS:	bjoern.riemer@fokus.fraunhofer.de
+//  Contact:		bjoern.riemer@web.de
 //  Purpose:		
 //  Description:	Provides the main control logic
 //  Date:			22.02.2011
