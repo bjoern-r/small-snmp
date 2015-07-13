@@ -1,6 +1,8 @@
 language: c
+compiler:
+  - gcc
 script:
-- make
+  - make
 sudo: false
 env:
   global:
@@ -13,3 +15,4 @@ addons:
     notification_email: bjoern.riemer@web.de
     build_command_prepend: "make clean"
     build_command:   "make -j 4"
+    branch_pattern: master
