@@ -1,4 +1,15 @@
 language: c
 script:
- - make
+- make
 sudo: false
+env:
+  global:
+    secure: dpAGcDJwsbVOKfD7XIEnqmJxwrSF+OYK+mWKlGI/El8A+3WSr5FtOTegFveU6M3uES/Ufs8Tk8QAZ710APymjZA2C+j8AVKP0VHKmMZcG9UTO/sixmot2DEu/vu416bDSYtfzM9vLvs4ZiVp/HUnWeHDaO/kZrXSB2FMYXS2sfQ=
+addons:
+  coverity_scan:
+    project:
+      name: "bjoern-r/small-snmp"
+      description: "Build submitted via Travis CI"
+    notification_email: bjoern.riemer@web.de
+    build_command_prepend: "make clean"
+    build_command:   "make -j 4"
